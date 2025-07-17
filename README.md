@@ -50,6 +50,11 @@ Settings > Coming Soon Status in the WordPress admin menu.
 The "Settings" link next to the plugin on the main Plugins listing page.
 
 ##Changelog  
+
+### 1.0.1 - 2025-07-17
+* **Fix:** Added "Coming Soon" status to the Quick Edit dropdown on post/page listing screens, making it selectable without entering the full editor.
+* **Dev:** Added a "Developer Notes" section to the main plugin file with instructions on how to integrate custom theme "Read More" links.
+
 1.0.0 - 2025-07-17
 
 Initial release.

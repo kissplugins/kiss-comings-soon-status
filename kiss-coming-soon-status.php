@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       KISS Coming Soon Post Status
- * Plugin URI:        https://KISSplugins.com
+ * Plugin Name:       Coming Soon Post Status
+ * Plugin URI:        https://KISSPlugins.com
  * Description:       Adds a "Coming Soon" post status to show posts in archives but link to '#' instead of the full post.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            KISS Plugins
  * Author URI:        https://KISSPlugins.com
  * License:           GPL-2.0+
@@ -27,6 +27,7 @@
  * | - private function __construct()
  * | - public function register_coming_soon_post_status()
  * | - public function add_coming_soon_post_status_to_dropdown()
+ * | - public function add_coming_soon_to_quick_edit()
  * | - public function include_coming_soon_in_queries( $query )
  * | - public function modify_post_link( $permalink, $post )
  * | - public function modify_read_more_link( $more_link )
@@ -36,8 +37,33 @@
  * | - public function add_settings_link( $links )
  * |
  * =================================================================================================
+ * | Developer Notes
+ * =================================================================================================
+ * |
+ * | To make your theme's custom "Read More" links compatible with this plugin, you should
+ * | check the post status before rendering the link.
+ * |
+ * | Example:
+ * |
+ * | if ( function_exists('CSPS_Coming_Soon_Post_Status') && CSPS_Coming_Soon_Post_Status::POST_STATUS === get_post_status( get_the_ID() ) ) {
+ * |     // Output the "Coming Soon" link
+ * |     echo '<a class="my-custom-read-more" href="#">' . esc_html( CSPS_Coming_Soon_Post_Status::LABEL ) . '</a>';
+ * | } else {
+ * |     // Output the standard permalink
+ * |     echo '<a class="my-custom-read-more" href="' . esc_url( get_permalink() ) . '">Read More</a>';
+ * | }
+ * |
+ * | This plugin uses the standard 'the_content_more_link' and 'excerpt_more' filters. If your
+ * | theme also uses these standard WordPress filters for its "Read More" links, no changes
+ * | should be necessary.
+ * |
+ * =================================================================================================
  * | Changelog
  * =================================================================================================
+ * |
+ * | 1.0.1 - 2025-07-17
+ * | - Fix: Add "Coming Soon" status to the Quick Edit dropdown on post/page listing screens.
+ * | - Dev: Added documentation for developers on how to integrate with custom "Read More" links.
  * |
  * | 1.0.0 - 2025-07-17
  * | - Initial release.
@@ -79,7 +105,7 @@ csps_run_plugin();
  *
  * @since      1.0.0
  * @package    CSPS_Coming_Soon_Post_Status
- * @author     Gemini
+ * @author     KISS Plugins
  */
 final class CSPS_Coming_Soon_Post_Status {
 
@@ -99,7 +125,7 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @access public
 	 * @var string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 
 	/**
 	 * The unique identifier for the custom post status.
@@ -142,6 +168,7 @@ final class CSPS_Coming_Soon_Post_Status {
 		add_action( 'init', array( $this, 'register_coming_soon_post_status' ) );
 		add_action( 'admin_footer-post.php', array( $this, 'add_coming_soon_post_status_to_dropdown' ) );
 		add_action( 'admin_footer-post-new.php', array( $this, 'add_coming_soon_post_status_to_dropdown' ) );
+		add_action( 'admin_footer-edit.php', array( $this, 'add_coming_soon_to_quick_edit' ) );
 		add_action( 'pre_get_posts', array( $this, 'include_coming_soon_in_queries' ) );
 
 		add_filter( 'post_link', array( $this, 'modify_post_link' ), 10, 2 );
@@ -194,23 +221,52 @@ final class CSPS_Coming_Soon_Post_Status {
         <script>
         jQuery(document).ready(function($){
             var statusDropdown = $('select#post_status');
-            if (statusDropdown.length) {
+            if (statusDropdown.length && statusDropdown.find('option[value=\"" . esc_js( $status_const ) . "\"]').length === 0) {
                 statusDropdown.append('<option value=\"" . esc_js( $status_const ) . "\"" . esc_js( $selected ) . ">" . esc_js( $label ) . "</option>');
+            }
 
-                if ('" . esc_js( $post->post_status ) . "' === '" . esc_js( $status_const ) . "') {
+            if ('" . esc_js( $post->post_status ) . "' === '" . esc_js( $status_const ) . "') {
+                $('#post-status-display').text('" . esc_js( $label ) . "');
+            }
+
+            $('a.save-post-status').on('click', function(){
+                if (statusDropdown.val() === '" . esc_js( $status_const ) . "') {
                     $('#post-status-display').text('" . esc_js( $label ) . "');
                 }
-
-                $('a.save-post-status').on('click', function(){
-                    if (statusDropdown.val() === '" . esc_js( $status_const ) . "') {
-                        $('#post-status-display').text('" . esc_js( $label ) . "');
-                    }
-                });
-            }
+            });
         });
         </script>
         ";
 	}
+
+	/**
+	 * Adds the "Coming Soon" status to the Quick Edit status dropdown.
+	 *
+	 * @since 1.0.1
+	 * @return void
+	 */
+	public function add_coming_soon_to_quick_edit() {
+		$status_const = self::POST_STATUS;
+		$label        = self::LABEL;
+		echo "
+		<script>
+		jQuery(document).ready(function($){
+			// Use delegation for the Quick Edit link click, as rows are loaded via AJAX.
+			$('#the-list').on('click', '.editinline', function() {
+				// Set a small timeout to allow the Quick Edit row to be populated.
+				setTimeout(function() {
+					var quickEditRow = $('tr.inline-edit-row');
+					var statusDropdown = quickEditRow.find('select[name=\"_status\"]');
+					if (statusDropdown.length && statusDropdown.find('option[value=\"" . esc_js( $status_const ) . "\"]').length === 0) {
+						statusDropdown.append('<option value=\"" . esc_js( $status_const ) . "\">" . esc_js( $label ) . "</option>');
+					}
+				}, 50);
+			});
+		});
+		</script>
+		";
+	}
+
 
 	/**
 	 * Includes posts with the "Coming Soon" status in main frontend queries.
@@ -256,7 +312,7 @@ final class CSPS_Coming_Soon_Post_Status {
 	}
 
 	/**
-	 * Changes the "Read More" link text and URL for posts using the tag.
+	 * Changes the "Read More" link text and URL for posts using the <!--more--> tag.
 	 *
 	 * @since    1.0.0
 	 * @param    string $more_link The original "Read More" link HTML.

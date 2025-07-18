@@ -188,6 +188,8 @@ final class CSPS_Coming_Soon_Post_Status {
 		
 		// Register settings
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'wp_footer', array( $this, 'inject_js_change_read_more' ) );
+
 	}
 
 	/**
@@ -212,7 +214,7 @@ final class CSPS_Coming_Soon_Post_Status {
 			self::POST_STATUS,
 			array(
 				'label'                     => _x( self::LABEL, 'post', 'csps-coming-soon-post-status' ),
-				'public'                    => false, // Set to false to prevent direct access.
+				'public'                    => true, // Set to false to prevent direct access.
 				'internal'                  => true,
 				'show_in_admin_all_list'    => true,
 				'show_in_admin_status_list' => true,
@@ -528,4 +530,36 @@ final class CSPS_Coming_Soon_Post_Status {
 		array_unshift( $links, $settings_link );
 		return $links;
 	}
+
+	/**
+	 * Inject JS in frontend footer to update "Read more" link text for Coming Soon posts.
+	 *
+	 * @since 1.1.2
+	 * @return void
+	 */
+	public function inject_js_change_read_more() {
+		if ( is_admin() ) {
+			return;
+		}
+		?>
+		<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('a[href="#"]').forEach(function (link) {
+				if (link.closest('nav') || link.closest('footer')) return;
+				link.textContent = '<?php echo esc_js( $this->get_coming_soon_label() ); ?>';
+				link.classList.add('coming-soon');
+			});
+		});
+		</script>
+		<style>
+		a.coming-soon {
+			color: #000000 !important;
+			cursor: default;
+			text-decoration: none;
+			pointer-events: none;
+		}
+		</style>
+		<?php
+	}
+
 }

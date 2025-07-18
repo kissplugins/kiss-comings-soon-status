@@ -45,7 +45,7 @@ Select "Coming Soon" and click Update or Save Draft.
 
 The post will now appear on your site's archive pages with the "Coming Soon" link. When you are ready to publish it fully, simply change the status to "Published".
 
-##Settings  
+## Settings  
 A placeholder settings page has been created and can be accessed via:
 
 Settings > Coming Soon Status in the WordPress admin menu.
@@ -53,6 +53,7 @@ Settings > Coming Soon Status in the WordPress admin menu.
 The "Settings" link next to the plugin on the main Plugins listing page.
 
 ## Changelog  
+
 1.1.1
 - Refactor: Replaced status dropdown modification with a dedicated "Set as Coming Soon" checkbox. 
 - Feature: Added checkbox to the "Publish" meta box in the full post editor. 
@@ -64,6 +65,8 @@ The "Settings" link next to the plugin on the main Plugins listing page.
 - Fix: Add "Coming Soon" status to the Quick Edit dropdown on post page listing screens.  
 - Dev: Added documentation for developers on how to integrate with custom "Read More" links.  
 
+1.0.0 - 2025-07-17
+Initial release.
 1.0.0 - 2025-07-17  
 Initial release.  
 - Feature: Adds a "Coming Soon" custom post status.

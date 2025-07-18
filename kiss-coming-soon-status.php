@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Coming Soon Post Status
+ * Plugin Name:       KISS Coming Soon Post Status
  * Plugin URI:        https://KISSPlugins.com
  * Description:       Adds a "Coming Soon" post status to show posts in archives but link to '#' instead of the full post.
  * Version:           1.1.1

@@ -53,12 +53,18 @@ Settings > Coming Soon Status in the WordPress admin menu.
 The "Settings" link next to the plugin on the main Plugins listing page.
 
 ##Changelog  
+
 1.1.1
 - Refactor: Replaced status dropdown modification with a dedicated "Set as Coming Soon" checkbox. 
 - Feature: Added checkbox to the "Publish" meta box in the full post editor. 
 - Feature: Added checkbox to the "Quick Edit" interface on post listing screens. 
 - Fix: The "Coming Soon" status is now reliably saved and reflected in Quick Edit mode. 
 - Dev: Removed old JavaScript for dropdown manipulation and added new script for Quick Edit checkbox logic.
+
+1.0.1 - 2025-07-17
+* **Fix:** Added "Coming Soon" status to the Quick Edit dropdown on post/page listing screens, making it selectable without entering the full editor.
+* **Dev:** Added a "Developer Notes" section to the main plugin file with instructions on how to integrate custom theme "Read More" links.
+
 
 1.0.0 - 2025-07-17
 

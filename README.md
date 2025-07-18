@@ -31,6 +31,9 @@ Activate the plugin through the 'Plugins' menu in WordPress.
 
 That's it! You can now use the "Coming Soon" status on your posts and pages.
 
+##Developers  
+See plugin code on how to customize your labels.
+
 ##How to Use  
 Go to edit or create a new Post or Page.
 
@@ -51,26 +54,19 @@ The "Settings" link next to the plugin on the main Plugins listing page.
 
 ##Changelog  
 1.1.1
-Current behavior: The plugin actively changes "Read More" links to "Coming Soon" for posts with the Coming Soon status. 
-
-2. Improvements made: - Added a settings page with a custom label field - Created a get_coming_soon_label() method that returns the custom label or defaults to "Coming Soon" - Updated both modify_read_more_link() and modify_excerpt_more() to use the custom label 
-
-3. How to use: - Go to Settings → Coming Soon Status in WordPress admin - Enter your custom label (e-g., "Coming Soon", "In Progress", "Under Development") - Leave empty to use the default "Coming Soon"
-
-The plugin now allows full customization of the label that replaces "Read More" for Coming Soon posts.
-
+- Refactor: Replaced status dropdown modification with a dedicated "Set as Coming Soon" checkbox. 
+- Feature: Added checkbox to the "Publish" meta box in the full post editor. 
+- Feature: Added checkbox to the "Quick Edit" interface on post listing screens. 
+- Fix: The "Coming Soon" status is now reliably saved and reflected in Quick Edit mode. 
+- Dev: Removed old JavaScript for dropdown manipulation and added new script for Quick Edit checkbox logic.
 
 1.0.0 - 2025-07-17
 
 Initial release.
 
-Feature: Adds a "Coming Soon" custom post status.
-
-Feature: Posts with the "Coming Soon" status appear in frontend archive queries (category, tag, etc.).
-
-Feature: The permalink and "Read More" links for these posts are modified to point to "#" and display "Coming Soon".
-
-Feature: A placeholder settings page is available under Settings > Coming Soon Status.
-
-Feature: A convenient "Settings" link is added to the plugin's entry on the main plugins page.
+- Feature: Adds a "Coming Soon" custom post status.
+- Feature: Posts with the "Coming Soon" status appear in frontend archive queries (category, tag, etc.).
+- Feature: The permalink and "Read More" links for these posts are modified to point to "#" and display "Coming Soon".
+- Feature: A placeholder settings page is available under Settings > Coming Soon Status.
+- Feature: A convenient "Settings" link is added to the plugin's entry on the main plugins page.
 

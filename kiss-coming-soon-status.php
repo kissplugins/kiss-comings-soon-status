@@ -3,7 +3,7 @@
  * Plugin Name:       Coming Soon Post Status
  * Plugin URI:        https://KISSPlugins.com
  * Description:       Adds a "Coming Soon" post status to show posts in archives but link to '#' instead of the full post.
- * Version:           1.0.1
+ * Version:           1.1.0
  * Author:            KISS Plugins
  * Author URI:        https://KISSPlugins.com
  * License:           GPL-2.0+
@@ -26,8 +26,10 @@
  * | - public static function get_instance()
  * | - private function __construct()
  * | - public function register_coming_soon_post_status()
- * | - public function add_coming_soon_post_status_to_dropdown()
- * | - public function add_coming_soon_to_quick_edit()
+ * | - public function add_coming_soon_checkbox_to_publish_box( $post )
+ * | - public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type )
+ * | - public function save_coming_soon_status( $post_id )
+ * | - public function quick_edit_script()
  * | - public function include_coming_soon_in_queries( $query )
  * | - public function modify_post_link( $permalink, $post )
  * | - public function modify_read_more_link( $more_link )
@@ -45,7 +47,7 @@
  * |
  * | Example:
  * |
- * | if ( function_exists('CSPS_Coming_Soon_Post_Status') && CSPS_Coming_Soon_Post_Status::POST_STATUS === get_post_status( get_the_ID() ) ) {
+ * | if ( class_exists('CSPS_Coming_Soon_Post_Status') && CSPS_Coming_Soon_Post_Status::POST_STATUS === get_post_status( get_the_ID() ) ) {
  * |     // Output the "Coming Soon" link
  * |     echo '<a class="my-custom-read-more" href="#">' . esc_html( CSPS_Coming_Soon_Post_Status::LABEL ) . '</a>';
  * | } else {
@@ -61,17 +63,19 @@
  * | Changelog
  * =================================================================================================
  * |
+ * | 1.1.0 - 2025-07-17
+ * | - Refactor: Replaced status dropdown modification with a dedicated "Set as Coming Soon" checkbox.
+ * | - Feature: Added checkbox to the "Publish" meta box in the full post editor.
+ * | - Feature: Added checkbox to the "Quick Edit" interface on post listing screens.
+ * | - Fix: The "Coming Soon" status is now reliably saved and reflected in Quick Edit mode.
+ * | - Dev: Removed old JavaScript for dropdown manipulation and added new script for Quick Edit checkbox logic.
+ * |
  * | 1.0.1 - 2025-07-17
  * | - Fix: Add "Coming Soon" status to the Quick Edit dropdown on post/page listing screens.
  * | - Dev: Added documentation for developers on how to integrate with custom "Read More" links.
  * |
  * | 1.0.0 - 2025-07-17
  * | - Initial release.
- * | - Feature: "Coming Soon" custom post status.
- * | - Feature: Posts with "Coming Soon" status appear in frontend archives.
- * | - Feature: Permalink and "Read More" links for these posts point to "#" and display "Coming Soon".
- * | - Feature: Placeholder settings page under Settings > Coming Soon Status.
- * | - Feature: "Settings" link on the main plugins page.
  * |
  * =================================================================================================
  */
@@ -84,10 +88,6 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * Begins execution of the plugin.
  *
- * Since everything within the plugin is registered via hooks,
- * kicking off the plugin from this point in the file does
- * not affect the page life cycle.
- *
  * @since    1.0.0
  */
 function csps_run_plugin() {
@@ -97,11 +97,6 @@ csps_run_plugin();
 
 /**
  * The core plugin class.
- *
- * This is used to define internationalization, admin-specific hooks, and
- * public-facing site hooks.
- *
- * Also maintains a single instance of the class.
  *
  * @since      1.0.0
  * @package    CSPS_Coming_Soon_Post_Status
@@ -114,18 +109,18 @@ final class CSPS_Coming_Soon_Post_Status {
 	 *
 	 * @since    1.0.0
 	 * @access   private
-	 * @var      CSPS_Coming_Soon_Post_Status    $instance    The single instance of the class.
+	 * @var      CSPS_Coming_Soon_Post_Status    $instance
 	 */
 	private static $instance;
 
 	/**
 	 * The current version of the plugin.
 	 *
-	 * @since 1.0.0
+	 * @since 1.1.0
 	 * @access public
 	 * @var string
 	 */
-	const VERSION = '1.0.1';
+	const VERSION = '1.1.0';
 
 	/**
 	 * The unique identifier for the custom post status.
@@ -150,7 +145,7 @@ final class CSPS_Coming_Soon_Post_Status {
 	 *
 	 * @since     1.0.0
 	 * @static
-	 * @return    CSPS_Coming_Soon_Post_Status    An instance of the class.
+	 * @return    CSPS_Coming_Soon_Post_Status An instance of the class.
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -165,16 +160,26 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @since    1.0.0
 	 */
 	private function __construct() {
+		// Register the custom status.
 		add_action( 'init', array( $this, 'register_coming_soon_post_status' ) );
-		add_action( 'admin_footer-post.php', array( $this, 'add_coming_soon_post_status_to_dropdown' ) );
-		add_action( 'admin_footer-post-new.php', array( $this, 'add_coming_soon_post_status_to_dropdown' ) );
-		add_action( 'admin_footer-edit.php', array( $this, 'add_coming_soon_to_quick_edit' ) );
-		add_action( 'pre_get_posts', array( $this, 'include_coming_soon_in_queries' ) );
 
+		// Add checkbox UI to editors.
+		add_action( 'post_submitbox_misc_actions', array( $this, 'add_coming_soon_checkbox_to_publish_box' ) );
+		add_action( 'quick_edit_custom_box', array( $this, 'add_coming_soon_checkbox_to_quick_edit' ), 10, 2 );
+
+		// Handle saving the status from the checkbox.
+		add_action( 'save_post', array( $this, 'save_coming_soon_status' ) );
+
+		// Add JS for Quick Edit UI.
+		add_action( 'admin_footer-edit.php', array( $this, 'quick_edit_script' ) );
+
+		// Frontend modifications.
+		add_action( 'pre_get_posts', array( $this, 'include_coming_soon_in_queries' ) );
 		add_filter( 'post_link', array( $this, 'modify_post_link' ), 10, 2 );
 		add_filter( 'the_content_more_link', array( $this, 'modify_read_more_link' ) );
 		add_filter( 'excerpt_more', array( $this, 'modify_excerpt_more' ) );
 
+		// Settings page.
 		add_action( 'admin_menu', array( $this, 'add_admin_menu_page' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'add_settings_link' ) );
 	}
@@ -190,8 +195,8 @@ final class CSPS_Coming_Soon_Post_Status {
 			self::POST_STATUS,
 			array(
 				'label'                     => _x( self::LABEL, 'post', 'csps-coming-soon-post-status' ),
-				'public'                    => true,
-				'exclude_from_search'       => false,
+				'public'                    => false, // Set to false to prevent direct access.
+				'internal'                  => true,
 				'show_in_admin_all_list'    => true,
 				'show_in_admin_status_list' => true,
 				/* translators: %s: number of posts */
@@ -201,76 +206,115 @@ final class CSPS_Coming_Soon_Post_Status {
 	}
 
 	/**
-	 * Adds the "Coming Soon" status to the post status dropdown in the editor.
-	 * This uses JavaScript to modify the DOM as there is no native PHP hook.
+	 * Adds a "Coming Soon" checkbox to the Publish meta box in the full editor.
 	 *
-	 * @since    1.0.0
-	 * @return   void
+	 * @since 1.1.0
+	 * @param WP_Post $post The current post object.
+	 * @return void
 	 */
-	public function add_coming_soon_post_status_to_dropdown() {
-		global $post;
+	public function add_coming_soon_checkbox_to_publish_box( $post ) {
 		if ( ! is_object( $post ) ) {
 			return;
 		}
+		$is_coming_soon = ( $post->post_status === self::POST_STATUS );
+		$checked        = $is_coming_soon ? 'checked="checked"' : '';
+		wp_nonce_field( 'csps_save_coming_soon_status', 'csps_nonce' );
 
-		$status_const = self::POST_STATUS;
-		$label        = self::LABEL;
-		$selected     = ( $post->post_status === $status_const ) ? ' selected="selected"' : '';
-
-		echo "
-        <script>
-        jQuery(document).ready(function($){
-            var statusDropdown = $('select#post_status');
-            if (statusDropdown.length && statusDropdown.find('option[value=\"" . esc_js( $status_const ) . "\"]').length === 0) {
-                statusDropdown.append('<option value=\"" . esc_js( $status_const ) . "\"" . esc_js( $selected ) . ">" . esc_js( $label ) . "</option>');
-            }
-
-            if ('" . esc_js( $post->post_status ) . "' === '" . esc_js( $status_const ) . "') {
-                $('#post-status-display').text('" . esc_js( $label ) . "');
-            }
-
-            $('a.save-post-status').on('click', function(){
-                if (statusDropdown.val() === '" . esc_js( $status_const ) . "') {
-                    $('#post-status-display').text('" . esc_js( $label ) . "');
-                }
-            });
-        });
-        </script>
-        ";
+		echo '<div class="misc-pub-section misc-pub-coming-soon" style="padding: 5px 10px;">';
+		echo '<label><input type="checkbox" name="csps_coming_soon" value="1" ' . $checked . '> ';
+		echo esc_html__( 'Set as Coming Soon', 'csps-coming-soon-post-status' ) . '</label>';
+		echo '</div>';
 	}
 
 	/**
-	 * Adds the "Coming Soon" status to the Quick Edit status dropdown.
+	 * Adds a "Coming Soon" checkbox to the Quick Edit interface.
 	 *
-	 * @since 1.0.1
+	 * @since 1.1.0
+	 * @param string $column_name The name of the column being displayed.
+	 * @param string $post_type The current post type.
 	 * @return void
 	 */
-	public function add_coming_soon_to_quick_edit() {
-		$status_const = self::POST_STATUS;
-		$label        = self::LABEL;
-		echo "
-		<script>
-		jQuery(document).ready(function($){
-			// Use delegation for the Quick Edit link click, as rows are loaded via AJAX.
+	public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type ) {
+		if ( 'date' !== $column_name ) {
+			return;
+		}
+		// The nonce will be added via JS to ensure it's inside the form.
+		echo '<fieldset class="inline-edit-col-right">';
+		echo '<div class="inline-edit-col inline-edit-csps">';
+		echo '<label class="alignleft"><input type="checkbox" name="csps_coming_soon"> ';
+		echo '<span class="checkbox-title">' . esc_html__( 'Set as Coming Soon', 'csps-coming-soon-post-status' ) . '</span></label>';
+		echo '</div></fieldset>';
+	}
+
+	/**
+	 * Saves the "Coming Soon" status based on the checkbox state.
+	 *
+	 * @since 1.1.0
+	 * @param int $post_id The ID of the post being saved.
+	 * @return void
+	 */
+	public function save_coming_soon_status( $post_id ) {
+		$nonce_action = 'csps_save_coming_soon_status';
+		$nonce_name   = isset( $_POST['csps_nonce'] ) ? 'csps_nonce' : ( isset( $_POST['csps_quick_edit_nonce'] ) ? 'csps_quick_edit_nonce' : '' );
+
+		if ( empty( $nonce_name ) || ! isset( $_POST[ $nonce_name ] ) || ! wp_verify_nonce( $_POST[ $nonce_name ], $nonce_action ) ) {
+			return;
+		}
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		$current_status         = get_post_status( $post_id );
+		$is_coming_soon_checked = isset( $_POST['csps_coming_soon'] );
+
+		remove_action( 'save_post', array( $this, 'save_coming_soon_status' ) );
+
+		if ( $is_coming_soon_checked ) {
+			if ( $current_status !== self::POST_STATUS ) {
+				wp_update_post( array( 'ID' => $post_id, 'post_status' => self::POST_STATUS ) );
+			}
+		} elseif ( $current_status === self::POST_STATUS ) {
+			$new_status = isset( $_POST['post_status'] ) && $_POST['post_status'] !== self::POST_STATUS ? sanitize_text_field( $_POST['post_status'] ) : 'draft';
+			wp_update_post( array( 'ID' => $post_id, 'post_status' => $new_status ) );
+		}
+
+		add_action( 'save_post', array( $this, 'save_coming_soon_status' ) );
+	}
+
+	/**
+	 * Adds JavaScript to the footer of edit screens for Quick Edit functionality.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public function quick_edit_script() {
+		global $current_screen;
+		if ( ! $current_screen || 'edit' !== $current_screen->base ) {
+			return;
+		}
+		?>
+		<script id="csps-quick-edit-script">
+		jQuery(function($) {
 			$('#the-list').on('click', '.editinline', function() {
-				// Set a small timeout to allow the Quick Edit row to be populated.
-				setTimeout(function() {
-					var quickEditRow = $('tr.inline-edit-row');
-					var statusDropdown = quickEditRow.find('select[name=\"_status\"]');
-					if (statusDropdown.length && statusDropdown.find('option[value=\"" . esc_js( $status_const ) . "\"]').length === 0) {
-						statusDropdown.append('<option value=\"" . esc_js( $status_const ) . "\">" . esc_js( $label ) . "</option>');
-					}
-				}, 50);
+				var post_id = $(this).closest('tr').attr('id').replace('post-', '');
+				var post_status = $('#post-' + post_id + ' .post_status').text();
+				var $checkbox = $('.inline-edit-row input[name="csps_coming_soon"]');
+				$checkbox.prop('checked', post_status === '<?php echo esc_js( self::LABEL ); ?>');
+
+				if ( ! $('.inline-edit-row input[name="csps_quick_edit_nonce"]').length ) {
+					$checkbox.closest('.inline-edit-csps').append('<?php echo wp_nonce_field( 'csps_save_coming_soon_status', 'csps_quick_edit_nonce', true, false ); ?>');
+				}
 			});
 		});
 		</script>
-		";
+		<?php
 	}
-
 
 	/**
 	 * Includes posts with the "Coming Soon" status in main frontend queries.
-	 * This ensures they appear on category, tag, and archive pages.
 	 *
 	 * @since    1.0.0
 	 * @param    WP_Query $query The WordPress query object.
@@ -347,11 +391,11 @@ final class CSPS_Coming_Soon_Post_Status {
 	 */
 	public function add_admin_menu_page() {
 		add_options_page(
-			__( 'Coming Soon Status Settings', 'csps-coming-soon-post-status' ), // Page Title
-			__( 'Coming Soon Status', 'csps-coming-soon-post-status' ), // Menu Title
-			'manage_options', // Capability
-			'csps-settings', // Menu Slug
-			array( $this, 'render_settings_page' ) // Callback function
+			__( 'Coming Soon Status Settings', 'csps-coming-soon-post-status' ),
+			__( 'Coming Soon Status', 'csps-coming-soon-post-status' ),
+			'manage_options',
+			'csps-settings',
+			array( $this, 'render_settings_page' )
 		);
 	}
 

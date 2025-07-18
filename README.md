@@ -9,7 +9,7 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 A WordPress plugin to add a "Coming Soon" post status. This allows you to show posts in archive/category pages to build anticipation, but prevents users from clicking through to the full post.
 
-##Description  
+## Description  
 This plugin introduces a new post status called "Coming Soon". It's designed for when you want to tease upcoming content on your website without publishing the full post or page yet.
 
 When a post or page is set to "Coming Soon":
@@ -24,17 +24,17 @@ The link will point to "#" instead of the actual post URL, preventing public acc
 
 This is the perfect solution for building anticipation for new articles, products, or announcements while maintaining your site's layout and design.
 
-##Installation  
+## Installation  
 Upload the entire plugin folder to the /wp-content/plugins/ directory via FTP, or upload the zip file through the WordPress admin panel (Plugins > Add New > Upload Plugin).
 
 Activate the plugin through the 'Plugins' menu in WordPress.
 
 That's it! You can now use the "Coming Soon" status on your posts and pages.
 
-##Developers  
-See plugin code on how to customize your labels.
+## Developers  
+See PHP plugin code on how to customize your labels.
 
-##How to Use  
+## How to Use  
 Go to edit or create a new Post or Page.
 
 In the Status & visibility panel (in the block editor) or the Publish meta box (in the classic editor), click on the current status (e.g., "Draft" or "Published").
@@ -45,14 +45,14 @@ Select "Coming Soon" and click Update or Save Draft.
 
 The post will now appear on your site's archive pages with the "Coming Soon" link. When you are ready to publish it fully, simply change the status to "Published".
 
-##Settings  
+## Settings  
 A placeholder settings page has been created and can be accessed via:
 
 Settings > Coming Soon Status in the WordPress admin menu.
 
 The "Settings" link next to the plugin on the main Plugins listing page.
 
-##Changelog  
+## Changelog  
 
 1.1.1
 - Refactor: Replaced status dropdown modification with a dedicated "Set as Coming Soon" checkbox. 
@@ -62,14 +62,13 @@ The "Settings" link next to the plugin on the main Plugins listing page.
 - Dev: Removed old JavaScript for dropdown manipulation and added new script for Quick Edit checkbox logic.
 
 1.0.1 - 2025-07-17
-* **Fix:** Added "Coming Soon" status to the Quick Edit dropdown on post/page listing screens, making it selectable without entering the full editor.
-* **Dev:** Added a "Developer Notes" section to the main plugin file with instructions on how to integrate custom theme "Read More" links.
-
+- Fix: Add "Coming Soon" status to the Quick Edit dropdown on post page listing screens.  
+- Dev: Added documentation for developers on how to integrate with custom "Read More" links.  
 
 1.0.0 - 2025-07-17
-
 Initial release.
-
+1.0.0 - 2025-07-17  
+Initial release.  
 - Feature: Adds a "Coming Soon" custom post status.
 - Feature: Posts with the "Coming Soon" status appear in frontend archive queries (category, tag, etc.).
 - Feature: The permalink and "Read More" links for these posts are modified to point to "#" and display "Coming Soon".

@@ -1,4 +1,4 @@
-Coming Soon Post Status  
+KISS Coming Soon Post Status  
 Author: KISS Plugins  
 Author URI: https://KISSPlugins.com  
 Requires at least: 5.0  

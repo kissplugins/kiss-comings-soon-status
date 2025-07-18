@@ -172,6 +172,9 @@ final class CSPS_Coming_Soon_Post_Status {
 
 		// Add JS for Quick Edit UI.
 		add_action( 'admin_footer-edit.php', array( $this, 'quick_edit_script' ) );
+		
+		// Add post status data to post rows for Quick Edit
+		add_filter( 'post_row_actions', array( $this, 'add_post_status_data' ), 10, 2 );
 
 		// Frontend modifications.
 		add_action( 'pre_get_posts', array( $this, 'include_coming_soon_in_queries' ) );
@@ -235,9 +238,11 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @return void
 	 */
 	public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type ) {
-		if ( 'date' !== $column_name ) {
+		static $printed = false;
+		if ( $printed ) {
 			return;
 		}
+		$printed = true;
 		// The nonce will be added via JS to ensure it's inside the form.
 		echo '<fieldset class="inline-edit-col-right">';
 		echo '<div class="inline-edit-col inline-edit-csps">';
@@ -285,6 +290,20 @@ final class CSPS_Coming_Soon_Post_Status {
 	}
 
 	/**
+	 * Adds post status data to post rows for Quick Edit functionality.
+	 *
+	 * @since 1.1.0
+	 * @param array $actions An array of row action links.
+	 * @param WP_Post $post The current post object.
+	 * @return array The modified array of row action links.
+	 */
+	public function add_post_status_data( $actions, $post ) {
+		$is_coming_soon = ( $post->post_status === self::POST_STATUS );
+		$actions['csps_status'] = '<span class="csps-status" data-coming-soon="' . ( $is_coming_soon ? '1' : '0' ) . '" style="display:none;"></span>';
+		return $actions;
+	}
+
+	/**
 	 * Adds JavaScript to the footer of edit screens for Quick Edit functionality.
 	 *
 	 * @since 1.1.0
@@ -300,9 +319,13 @@ final class CSPS_Coming_Soon_Post_Status {
 		jQuery(function($) {
 			$('#the-list').on('click', '.editinline', function() {
 				var post_id = $(this).closest('tr').attr('id').replace('post-', '');
-				var post_status = $('#post-' + post_id + ' .post_status').text();
+				var $row = $('#post-' + post_id);
+				
+				// Get the Coming Soon status from our data attribute
+				var isComingSoon = $row.find('.csps-status').data('coming-soon') === 1;
+				
 				var $checkbox = $('.inline-edit-row input[name="csps_coming_soon"]');
-				$checkbox.prop('checked', post_status === '<?php echo esc_js( self::LABEL ); ?>');
+				$checkbox.prop('checked', isComingSoon);
 
 				if ( ! $('.inline-edit-row input[name="csps_quick_edit_nonce"]').length ) {
 					$checkbox.closest('.inline-edit-csps').append('<?php echo wp_nonce_field( 'csps_save_coming_soon_status', 'csps_quick_edit_nonce', true, false ); ?>');
@@ -321,14 +344,30 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @return   void
 	 */
 	public function include_coming_soon_in_queries( $query ) {
-		if ( is_admin() || ! $query->is_main_query() ) {
+		if ( ! $query->is_main_query() ) {
 			return;
 		}
 
-		if ( $query->is_home() || $query->is_category() || $query->is_tag() || $query->is_archive() ) {
+		// Handle frontend queries
+		if ( ! is_admin() && ( $query->is_home() || $query->is_category() || $query->is_tag() || $query->is_archive() ) ) {
 			$current_statuses = $query->get( 'post_status' );
 			if ( empty( $current_statuses ) ) {
 				$current_statuses = array( 'publish' );
+			}
+			if ( is_string( $current_statuses ) ) {
+				$current_statuses = array( $current_statuses );
+			}
+			if ( ! in_array( self::POST_STATUS, $current_statuses, true ) ) {
+				$current_statuses[] = self::POST_STATUS;
+				$query->set( 'post_status', $current_statuses );
+			}
+		}
+
+		// Handle admin queries - include Coming Soon posts in "All Posts" view
+		if ( is_admin() && ! isset( $_GET['post_status'] ) ) {
+			$current_statuses = $query->get( 'post_status' );
+			if ( empty( $current_statuses ) ) {
+				$current_statuses = array( 'publish', 'draft', 'pending', 'private', 'future' );
 			}
 			if ( is_string( $current_statuses ) ) {
 				$current_statuses = array( $current_statuses );

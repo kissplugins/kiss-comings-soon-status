@@ -50,6 +50,16 @@ Settings > Coming Soon Status in the WordPress admin menu.
 The "Settings" link next to the plugin on the main Plugins listing page.
 
 ##Changelog  
+1.1.1
+Current behavior: The plugin actively changes "Read More" links to "Coming Soon" for posts with the Coming Soon status. 
+
+2. Improvements made: - Added a settings page with a custom label field - Created a get_coming_soon_label() method that returns the custom label or defaults to "Coming Soon" - Updated both modify_read_more_link() and modify_excerpt_more() to use the custom label 
+
+3. How to use: - Go to Settings → Coming Soon Status in WordPress admin - Enter your custom label (e-g., "Coming Soon", "In Progress", "Under Development") - Leave empty to use the default "Coming Soon"
+
+The plugin now allows full customization of the label that replaces "Read More" for Coming Soon posts.
+
+
 1.0.0 - 2025-07-17
 
 Initial release.

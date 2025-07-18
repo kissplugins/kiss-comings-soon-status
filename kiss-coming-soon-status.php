@@ -3,7 +3,7 @@
  * Plugin Name:       Coming Soon Post Status
  * Plugin URI:        https://KISSPlugins.com
  * Description:       Adds a "Coming Soon" post status to show posts in archives but link to '#' instead of the full post.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Author:            KISS Plugins
  * Author URI:        https://KISSPlugins.com
  * License:           GPL-2.0+
@@ -185,6 +185,20 @@ final class CSPS_Coming_Soon_Post_Status {
 		// Settings page.
 		add_action( 'admin_menu', array( $this, 'add_admin_menu_page' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), array( $this, 'add_settings_link' ) );
+		
+		// Register settings
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+	}
+
+	/**
+	 * Gets the custom label for Coming Soon posts.
+	 *
+	 * @since    1.1.0
+	 * @return   string The custom label or default.
+	 */
+	public function get_coming_soon_label() {
+		$custom_label = get_option( 'csps_custom_label', '' );
+		return ! empty( $custom_label ) ? $custom_label : self::LABEL;
 	}
 
 	/**
@@ -403,7 +417,7 @@ final class CSPS_Coming_Soon_Post_Status {
 	 */
 	public function modify_read_more_link( $more_link ) {
 		if ( self::POST_STATUS === get_post_status( get_the_ID() ) ) {
-			return '<a class="more-link" href="#">' . esc_html__( self::LABEL, 'csps-coming-soon-post-status' ) . '</a>';
+			return '<a class="more-link" href="#">' . esc_html( $this->get_coming_soon_label() ) . '</a>';
 		}
 		return $more_link;
 	}
@@ -417,7 +431,7 @@ final class CSPS_Coming_Soon_Post_Status {
 	 */
 	public function modify_excerpt_more( $more_text ) {
 		if ( self::POST_STATUS === get_post_status( get_the_ID() ) ) {
-			return ' <a class="more-link" href="#">' . esc_html__( self::LABEL, 'csps-coming-soon-post-status' ) . '</a>';
+			return ' <a class="more-link" href="#">' . esc_html( $this->get_coming_soon_label() ) . '</a>';
 		}
 		return $more_text;
 	}
@@ -439,6 +453,49 @@ final class CSPS_Coming_Soon_Post_Status {
 	}
 
 	/**
+	 * Registers plugin settings.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function register_settings() {
+		register_setting( 'csps_settings_group', 'csps_custom_label', array(
+			'type' => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+			'default' => '',
+		) );
+		
+		add_settings_section(
+			'csps_main_section',
+			__( 'Coming Soon Settings', 'csps-coming-soon-post-status' ),
+			null,
+			'csps-settings'
+		);
+		
+		add_settings_field(
+			'csps_custom_label',
+			__( 'Custom Label', 'csps-coming-soon-post-status' ),
+			array( $this, 'render_custom_label_field' ),
+			'csps-settings',
+			'csps_main_section'
+		);
+	}
+	
+	/**
+	 * Renders the custom label field.
+	 *
+	 * @since    1.1.0
+	 * @return   void
+	 */
+	public function render_custom_label_field() {
+		$value = get_option( 'csps_custom_label', '' );
+		?>
+		<input type="text" name="csps_custom_label" value="<?php echo esc_attr( $value ); ?>" class="regular-text" />
+		<p class="description"><?php esc_html_e( 'Enter a custom label for Coming Soon posts (e.g., "Coming Soon", "In Progress", "Under Development"). Leave empty to use the default "Coming Soon".', 'csps-coming-soon-post-status' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Renders the content for the settings page.
 	 *
 	 * @since    1.0.0
@@ -447,8 +504,14 @@ final class CSPS_Coming_Soon_Post_Status {
 	public function render_settings_page() {
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Settings/Configuration - Coming Soon', 'csps-coming-soon-post-status' ); ?></h1>
-			<p><?php esc_html_e( 'Future settings for the plugin will be available here.', 'csps-coming-soon-post-status' ); ?></p>
+			<h1><?php esc_html_e( 'Coming Soon Status Settings', 'csps-coming-soon-post-status' ); ?></h1>
+			<form method="post" action="options.php">
+				<?php
+				settings_fields( 'csps_settings_group' );
+				do_settings_sections( 'csps-settings' );
+				submit_button();
+				?>
+			</form>
 		</div>
 		<?php
 	}

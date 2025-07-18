@@ -235,9 +235,11 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @return void
 	 */
 	public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type ) {
-		if ( 'date' !== $column_name ) {
+		static $printed = false;
+		if ( $printed ) {
 			return;
 		}
+		$printed = true;
 		// The nonce will be added via JS to ensure it's inside the form.
 		echo '<fieldset class="inline-edit-col-right">';
 		echo '<div class="inline-edit-col inline-edit-csps">';
@@ -321,14 +323,30 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @return   void
 	 */
 	public function include_coming_soon_in_queries( $query ) {
-		if ( is_admin() || ! $query->is_main_query() ) {
+		if ( ! $query->is_main_query() ) {
 			return;
 		}
 
-		if ( $query->is_home() || $query->is_category() || $query->is_tag() || $query->is_archive() ) {
+		// Handle frontend queries
+		if ( ! is_admin() && ( $query->is_home() || $query->is_category() || $query->is_tag() || $query->is_archive() ) ) {
 			$current_statuses = $query->get( 'post_status' );
 			if ( empty( $current_statuses ) ) {
 				$current_statuses = array( 'publish' );
+			}
+			if ( is_string( $current_statuses ) ) {
+				$current_statuses = array( $current_statuses );
+			}
+			if ( ! in_array( self::POST_STATUS, $current_statuses, true ) ) {
+				$current_statuses[] = self::POST_STATUS;
+				$query->set( 'post_status', $current_statuses );
+			}
+		}
+
+		// Handle admin queries - include Coming Soon posts in "All Posts" view
+		if ( is_admin() && ! isset( $_GET['post_status'] ) ) {
+			$current_statuses = $query->get( 'post_status' );
+			if ( empty( $current_statuses ) ) {
+				$current_statuses = array( 'publish', 'draft', 'pending', 'private', 'future' );
 			}
 			if ( is_string( $current_statuses ) ) {
 				$current_statuses = array( $current_statuses );

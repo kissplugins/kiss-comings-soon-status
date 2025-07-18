@@ -191,18 +191,18 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @return   void
 	 */
 	public function register_coming_soon_post_status() {
-		register_post_status(
-			self::POST_STATUS,
-			array(
-				'label'                     => _x( self::LABEL, 'post', 'csps-coming-soon-post-status' ),
-				'public'                    => false, // Set to false to prevent direct access.
-				'internal'                  => true,
-				'show_in_admin_all_list'    => true,
-				'show_in_admin_status_list' => true,
-				/* translators: %s: number of posts */
-				'label_count'               => _n_noop( self::LABEL . ' <span class="count">(%s)</span>', self::LABEL . ' <span class="count">(%s)</span>', 'csps-coming-soon-post-status' ),
-			)
-		);
+               register_post_status(
+                       self::POST_STATUS,
+                       array(
+                               'label'                     => _x( self::LABEL, 'post', 'csps-coming-soon-post-status' ),
+                               'public'                    => false, // Set to false to prevent direct access.
+                               'internal'                  => false,
+                               'show_in_admin_all_list'    => true,
+                               'show_in_admin_status_list' => true,
+                               /* translators: %s: number of posts */
+                               'label_count'               => _n_noop( self::LABEL . ' <span class="count">(%s)</span>', self::LABEL . ' <span class="count">(%s)</span>', 'csps-coming-soon-post-status' ),
+                       )
+               );
 	}
 
 	/**
@@ -234,10 +234,10 @@ final class CSPS_Coming_Soon_Post_Status {
 	 * @param string $post_type The current post type.
 	 * @return void
 	 */
-	public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type ) {
-		if ( 'date' !== $column_name ) {
-			return;
-		}
+       public function add_coming_soon_checkbox_to_quick_edit( $column_name, $post_type ) {
+               if ( 'title' !== $column_name ) {
+                       return;
+               }
 		// The nonce will be added via JS to ensure it's inside the form.
 		echo '<fieldset class="inline-edit-col-right">';
 		echo '<div class="inline-edit-col inline-edit-csps">';

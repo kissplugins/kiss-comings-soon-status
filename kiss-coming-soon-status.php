@@ -544,10 +544,15 @@ final class CSPS_Coming_Soon_Post_Status {
 		?>
 		<script>
 		document.addEventListener('DOMContentLoaded', function () {
+			const link_keywords = ['read', 'more', 'detail', 'learn']
 			document.querySelectorAll('a[href="#"]').forEach(function (link) {
 				if (link.closest('nav') || link.closest('footer')) return;
+				const linkText = link.textContent.trim().toLowerCase();
+
+			if (link_keywords.some(word => linkText.includes(word))) {
 				link.textContent = '<?php echo esc_js( $this->get_coming_soon_label() ); ?>';
 				link.classList.add('coming-soon');
+			}
 			});
 		});
 		</script>
